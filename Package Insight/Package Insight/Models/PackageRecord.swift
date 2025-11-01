@@ -1,0 +1,161 @@
+import Foundation
+// MARK: - Package Record Model
+struct PackageRecord: Codable, Identifiable {
+    let id: UUID
+    let trackingNumber: String
+    let ani: String? // Account Number Index
+    let vai: Bool? // Vet Account Index (safe account match)
+    let adi: String? // Address Detection Index
+    let rsi: String? // Receiver Street Index
+    let osi: String? // Origin Source Index
+    let pdi: PackageDimensions? // Package Dimension Index
+    let pwi: PackageWeight? // Package Weight Index
+    let cii: Double? // Cubic Inch Index
+    let triggeredIndices: [String] // Array of triggered risk indices
+    let totalScore: Int // Risk score (0-100)
+    let rawBarcode: String
+    let userId: UUID
+    let status: PackageStatus
+    let createdAt: Date
+    let updatedAt: Date
+    enum CodingKeys: String, CodingKey {
+        case id, trackingNumber = "tracking_number"
+        case ani, vai, adi, rsi, osi, pdi, pwi, cii
+        case triggeredIndices = "triggered_indices"
+        case totalScore = "total_score"
+        case rawBarcode = "raw_barcode"
+        case userId = "user_id"
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+// MARK: - Supporting Models
+struct PackageDimensions: Codable {
+    let length: Double
+    let width: Double
+    let height: Double
+    let unit: String // "in" or "cm"
+    var volume: Double {
+        return length * width * height
+    }
+}
+struct PackageWeight: Codable {
+    let value: Double
+    let unit: String // "LB" or "KG"
+}
+enum PackageStatus: String, Codable, CaseIterable {
+    case pending = "pending"
+    case success = "success"
+    case error = "error"
+}
+// MARK: - Parsed Barcode Data
+struct ParsedBarcode: Codable {
+    let trackingNumber: String?
+    let ani: String? // Account Number
+    let adi: String? // Full Address
+    let rsi: String? // Street Only
+    let rawData: String
+}
+// MARK: - Risk Score Display
+struct RiskScoreDisplay {
+    let score: Int
+    let triggeredIndices: [String]
+    let color: RiskColor
+    let message: String
+    enum RiskColor {
+        case green, amber, red
+        var systemColor: String {
+            switch self {
+            case .green: return "green"
+            case .amber: return "orange"
+            case .red: return "red"
+            }
+        }
+        static func fromScore(_ score: Int) -> RiskColor {
+            switch score {
+            case 0...25: return .green
+            case 26...75: return .amber
+            default: return .red
+            }
+        }
+    }
+    static func create(from package: PackageRecord) -> RiskScoreDisplay {
+        let color = RiskColor.fromScore(package.totalScore)
+        let message = package.totalScore == 0 ? "Safe" : "Risk Level: \(package.totalScore)"
+        return RiskScoreDisplay(
+            score: package.totalScore,
+            triggeredIndices: package.triggeredIndices,
+            color: color,
+            message: message
+        )
+    }
+}
+// MARK: - Admin Models
+struct ANIWatchlistItem: Codable, Identifiable {
+    let id: UUID
+    let accountNumber: String
+    let notes: String?
+    let createdBy: UUID
+    let createdAt: Date
+    enum CodingKeys: String, CodingKey {
+        case id, accountNumber = "account_number"
+        case notes, createdBy = "created_by"
+        case createdAt = "created_at"
+    }
+}
+struct VAISafeAccount: Codable, Identifiable {
+    let id: UUID
+    let accountNumber: String
+    let notes: String?
+    let createdBy: UUID
+    let createdAt: Date
+    enum CodingKeys: String, CodingKey {
+        case id, accountNumber = "account_number"
+        case notes, createdBy = "created_by"
+        case createdAt = "created_at"
+    }
+}
+struct CIIRange: Codable, Identifiable {
+    let id: UUID
+    let minValue: Double
+    let maxValue: Double
+    let points: Int
+    let notes: String?
+    let createdBy: UUID
+    let createdAt: Date
+    enum CodingKeys: String, CodingKey {
+        case id, minValue = "min_value"
+        case maxValue = "max_value"
+        case points, notes, createdBy = "created_by"
+        case createdAt = "created_at"
+    }
+}
+struct OSIRule: Codable, Identifiable {
+    let id: UUID
+    let pattern: String
+    let points: Int
+    let active: Bool
+    let notes: String?
+    let createdBy: UUID
+    let createdAt: Date
+    enum CodingKeys: String, CodingKey {
+        case id, pattern, points, active, notes
+        case createdBy = "created_by"
+        case createdAt = "created_at"
+    }
+}
+struct RSIRule: Codable, Identifiable {
+    let id: UUID
+    let pattern: String
+    let points: Int
+    let active: Bool
+    let notes: String?
+    let createdBy: UUID
+    let createdAt: Date
+    enum CodingKeys: String, CodingKey {
+        case id, pattern, points, active, notes
+        case createdBy = "created_by"
+        case createdAt = "created_at"
+    }
+}

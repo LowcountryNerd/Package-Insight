@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>This app uses Bluetooth to connect to Socket Mobile barcode scanners for package scanning.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>This app uses Bluetooth to connect to Socket Mobile barcode scanners for package scanning.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>sktcompanion</string>
+	</array>
+	<key>UIExternalAccessoryProtocols</key>
+	<array>
+		<string>com.socketmobile.chs</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Package Insight uses the camera for Socket Mobile SocketCam to scan package barcodes when camera scanning is enabled.</string>
+	<key>CFBundleAllowMixedLocalizations</key>
+	<true/>
+</dict>
+</plist>

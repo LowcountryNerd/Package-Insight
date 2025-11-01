@@ -1,0 +1,46 @@
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+*.hmap
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+
+# Archives
+*.zip
+*.tar.gz
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Environment
+.env
+*.env
+
+# Logs
+*.log
+
+# TestFlight
+*.app.dSYM.zip
+*.app.dSYM
+
