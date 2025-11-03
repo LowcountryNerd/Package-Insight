@@ -12,7 +12,7 @@
 	<array>
 		<string>sktcompanion</string>
 	</array>
-	<key>UIExternalAccessoryProtocols</key>
+	<key>UISupportedExternalAccessoryProtocols</key>
 	<array>
 		<string>com.socketmobile.chs</string>
 	</array>

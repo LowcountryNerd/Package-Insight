@@ -210,8 +210,7 @@ class SocketMobileScannerManager: NSObject, ObservableObject {
         }
     }
     private func isSocketCamDevice(_ device: CaptureHelperDevice) -> Bool {
-        let deviceName = device.deviceInfo.name?.lowercased() ?? ""
-        return deviceName.contains("socketcam")
+        return device.deviceInfo.deviceType == .socketCamC820 || device.deviceInfo.deviceType == .socketCamC860
     }
     private func handleScannedData(_ rawData: String, deviceInfo: String?, symbology: String?) {
         let scannedData = ScannedBarcodeData(
