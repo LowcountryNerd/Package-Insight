@@ -103,6 +103,36 @@ struct ANIWatchlistItem: Codable, Identifiable {
         case notes, createdBy = "created_by"
         case createdAt = "created_at"
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        accountNumber = try container.decode(String.self, forKey: .accountNumber)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        
+        // Handle created_by as UUID string
+        if let createdByString = try? container.decode(String.self, forKey: .createdBy),
+           let createdByUUID = UUID(uuidString: createdByString) {
+            createdBy = createdByUUID
+        } else {
+            createdBy = try container.decode(UUID.self, forKey: .createdBy)
+        }
+        
+        // Handle date as ISO string or Date
+        if let dateString = try? container.decode(String.self, forKey: .createdAt) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) {
+                createdAt = date
+            } else {
+                // Try without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                createdAt = formatter.date(from: dateString) ?? Date()
+            }
+        } else {
+            createdAt = try container.decode(Date.self, forKey: .createdAt)
+        }
+    }
 }
 struct VAISafeAccount: Codable, Identifiable {
     let id: UUID
@@ -114,6 +144,35 @@ struct VAISafeAccount: Codable, Identifiable {
         case id, accountNumber = "account_number"
         case notes, createdBy = "created_by"
         case createdAt = "created_at"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        accountNumber = try container.decode(String.self, forKey: .accountNumber)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        
+        if let createdByString = try? container.decode(String.self, forKey: .createdBy),
+           let createdByUUID = UUID(uuidString: createdByString) {
+            createdBy = createdByUUID
+        } else {
+            createdBy = try container.decode(UUID.self, forKey: .createdBy)
+        }
+        
+        // Handle date as ISO string or Date
+        if let dateString = try? container.decode(String.self, forKey: .createdAt) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) {
+                createdAt = date
+            } else {
+                // Try without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                createdAt = formatter.date(from: dateString) ?? Date()
+            }
+        } else {
+            createdAt = try container.decode(Date.self, forKey: .createdAt)
+        }
     }
 }
 struct CIIRange: Codable, Identifiable {
@@ -130,6 +189,37 @@ struct CIIRange: Codable, Identifiable {
         case points, notes, createdBy = "created_by"
         case createdAt = "created_at"
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        minValue = try container.decode(Double.self, forKey: .minValue)
+        maxValue = try container.decode(Double.self, forKey: .maxValue)
+        points = try container.decode(Int.self, forKey: .points)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        
+        if let createdByString = try? container.decode(String.self, forKey: .createdBy),
+           let createdByUUID = UUID(uuidString: createdByString) {
+            createdBy = createdByUUID
+        } else {
+            createdBy = try container.decode(UUID.self, forKey: .createdBy)
+        }
+        
+        // Handle date as ISO string or Date
+        if let dateString = try? container.decode(String.self, forKey: .createdAt) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) {
+                createdAt = date
+            } else {
+                // Try without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                createdAt = formatter.date(from: dateString) ?? Date()
+            }
+        } else {
+            createdAt = try container.decode(Date.self, forKey: .createdAt)
+        }
+    }
 }
 struct OSIRule: Codable, Identifiable {
     let id: UUID
@@ -144,6 +234,37 @@ struct OSIRule: Codable, Identifiable {
         case createdBy = "created_by"
         case createdAt = "created_at"
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        pattern = try container.decode(String.self, forKey: .pattern)
+        points = try container.decode(Int.self, forKey: .points)
+        active = try container.decode(Bool.self, forKey: .active)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        
+        if let createdByString = try? container.decode(String.self, forKey: .createdBy),
+           let createdByUUID = UUID(uuidString: createdByString) {
+            createdBy = createdByUUID
+        } else {
+            createdBy = try container.decode(UUID.self, forKey: .createdBy)
+        }
+        
+        // Handle date as ISO string or Date
+        if let dateString = try? container.decode(String.self, forKey: .createdAt) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) {
+                createdAt = date
+            } else {
+                // Try without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                createdAt = formatter.date(from: dateString) ?? Date()
+            }
+        } else {
+            createdAt = try container.decode(Date.self, forKey: .createdAt)
+        }
+    }
 }
 struct RSIRule: Codable, Identifiable {
     let id: UUID
@@ -157,5 +278,36 @@ struct RSIRule: Codable, Identifiable {
         case id, pattern, points, active, notes
         case createdBy = "created_by"
         case createdAt = "created_at"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        pattern = try container.decode(String.self, forKey: .pattern)
+        points = try container.decode(Int.self, forKey: .points)
+        active = try container.decode(Bool.self, forKey: .active)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        
+        if let createdByString = try? container.decode(String.self, forKey: .createdBy),
+           let createdByUUID = UUID(uuidString: createdByString) {
+            createdBy = createdByUUID
+        } else {
+            createdBy = try container.decode(UUID.self, forKey: .createdBy)
+        }
+        
+        // Handle date as ISO string or Date
+        if let dateString = try? container.decode(String.self, forKey: .createdAt) {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: dateString) {
+                createdAt = date
+            } else {
+                // Try without fractional seconds
+                formatter.formatOptions = [.withInternetDateTime]
+                createdAt = formatter.date(from: dateString) ?? Date()
+            }
+        } else {
+            createdAt = try container.decode(Date.self, forKey: .createdAt)
+        }
     }
 }

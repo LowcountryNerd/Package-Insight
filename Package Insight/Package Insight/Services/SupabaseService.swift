@@ -76,44 +76,74 @@ class SupabaseService: ObservableObject {
     }
     // MARK: - Admin Operations
     func fetchANIWatchlist() async throws -> [ANIWatchlistItem] {
-        let response: [ANIWatchlistItem] = try await supabase
-            .from("ani_watchlist")
-            .select()
-            .execute()
-            .value
-        return response
+        do {
+            let response: [ANIWatchlistItem] = try await supabase
+                .from("ani_watchlist")
+                .select()
+                .execute()
+                .value
+            print("[SupabaseService] Fetched \(response.count) ANI watchlist items")
+            return response
+        } catch {
+            print("[SupabaseService] Error fetching ANI watchlist: \(error.localizedDescription)")
+            throw error
+        }
     }
     func fetchVAISafeAccounts() async throws -> [VAISafeAccount] {
-        let response: [VAISafeAccount] = try await supabase
-            .from("vai_safe_accounts")
-            .select()
-            .execute()
-            .value
-        return response
+        do {
+            let response: [VAISafeAccount] = try await supabase
+                .from("vai_safe_accounts")
+                .select()
+                .execute()
+                .value
+            print("[SupabaseService] Fetched \(response.count) VAI safe accounts")
+            return response
+        } catch {
+            print("[SupabaseService] Error fetching VAI safe accounts: \(error.localizedDescription)")
+            throw error
+        }
     }
     func fetchCIIRanges() async throws -> [CIIRange] {
-        let response: [CIIRange] = try await supabase
-            .from("cii_ranges")
-            .select()
-            .execute()
-            .value
-        return response
+        do {
+            let response: [CIIRange] = try await supabase
+                .from("cii_ranges")
+                .select()
+                .execute()
+                .value
+            print("[SupabaseService] Fetched \(response.count) CII ranges")
+            return response
+        } catch {
+            print("[SupabaseService] Error fetching CII ranges: \(error.localizedDescription)")
+            throw error
+        }
     }
     func fetchOSIRules() async throws -> [OSIRule] {
-        let response: [OSIRule] = try await supabase
-            .from("osi_rules")
-            .select()
-            .execute()
-            .value
-        return response
+        do {
+            let response: [OSIRule] = try await supabase
+                .from("osi_rules")
+                .select()
+                .execute()
+                .value
+            print("[SupabaseService] Fetched \(response.count) OSI rules")
+            return response
+        } catch {
+            print("[SupabaseService] Error fetching OSI rules: \(error.localizedDescription)")
+            throw error
+        }
     }
     func fetchRSIRules() async throws -> [RSIRule] {
-        let response: [RSIRule] = try await supabase
-            .from("rsi_rules")
-            .select()
-            .execute()
-            .value
-        return response
+        do {
+            let response: [RSIRule] = try await supabase
+                .from("rsi_rules")
+                .select()
+                .execute()
+                .value
+            print("[SupabaseService] Fetched \(response.count) RSI rules")
+            return response
+        } catch {
+            print("[SupabaseService] Error fetching RSI rules: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     // MARK: - ANI Watchlist CRUD
