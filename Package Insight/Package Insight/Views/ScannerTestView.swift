@@ -1,54 +1,20 @@
 import SwiftUI
+
 struct ScannerTestView: View {
     @StateObject private var scannerManager = SocketMobileScannerManager.shared
     @State private var scanHistory: [ScannedBarcodeData] = []
-    @State private var showingClearAlert = false
-    @State private var showingLogs = false
+    
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // Scanner Status Section
-                scannerStatusSection
-                // Discovered Devices Section
-                discoveredDevicesSection
-                // Scanner Controls Section
-                scannerControlsSection
-                // Scan Results Section
-                scanResultsSection
-                // Action Buttons Row
-                HStack(spacing: 12) {
-                    // Refresh Devices Button
-                    Button(action: {
-                        scannerManager.forceRefreshDevices()
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.clockwise")
-                            Text("Refresh Devices")
-                        }
-                        .font(.subheadline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.orange)
-                        .cornerRadius(8)
-                    }
-                    .disabled(!scannerManager.isInitialized)
-                    // Logs Button
-                    Button(action: {
-                        showingLogs = true
-                    }) {
-                        HStack {
-                            Image(systemName: "text.bubble")
-                            Text("View Logs (\(scannerManager.logMessages.count))")
-                        }
-                        .font(.subheadline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.purple)
-                        .cornerRadius(8)
-                    }
-                }
+            VStack(spacing: 24) {
+                // Connection Status
+                connectionStatusView
+                
+                Divider()
+                
+                // Scanned Data Section
+                scannedDataView
+                
                 Spacer()
             }
             .padding()
@@ -57,21 +23,11 @@ struct ScannerTestView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Clear") {
-                        showingClearAlert = true
+                        scanHistory.removeAll()
                     }
                     .foregroundColor(.red)
+                    .disabled(scanHistory.isEmpty)
                 }
-            }
-            .alert("Clear Scan History", isPresented: $showingClearAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear", role: .destructive) {
-                    scanHistory.removeAll()
-                }
-            } message: {
-                Text("This will clear all scan history. This action cannot be undone.")
-            }
-            .sheet(isPresented: $showingLogs) {
-                LogViewerView(logMessages: scannerManager.logMessages)
             }
         }
         .onAppear {
@@ -79,6 +35,7 @@ struct ScannerTestView: View {
             if !scannerManager.isInitialized {
                 scannerManager.initializeScanner()
             }
+            scannerManager.startScanning()
         }
         .onReceive(scannerManager.$lastScannedData) { data in
             if let data = data {
@@ -86,262 +43,206 @@ struct ScannerTestView: View {
             }
         }
     }
-    // MARK: - Scanner Status Section
-    private var scannerStatusSection: some View {
+    
+    // MARK: - Connection Status View
+    private var connectionStatusView: some View {
         VStack(spacing: 12) {
-            HStack {
-                Text("Scanner Status")
-                    .font(.headline)
-                Spacer()
-            }
             HStack {
                 Circle()
-                    .fill(Color(scannerManager.scannerStatus.color))
-                    .frame(width: 16, height: 16)
+                    .fill(statusColor)
+                    .frame(width: 20, height: 20)
+                
                 Text(scannerManager.scannerStatus.displayName)
-                    .font(.subheadline)
-                    .foregroundColor(Color(scannerManager.scannerStatus.color))
-                Spacer()
-                if let deviceInfo = scannerManager.connectedDeviceInfo {
-                    Text(deviceInfo)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
-        }
-    }
-    // MARK: - Discovered Devices Section
-    private var discoveredDevicesSection: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Discovered Devices")
                     .font(.headline)
-                Spacer()
-                Text("\(scannerManager.discoveredDevices.count)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            if scannerManager.discoveredDevices.isEmpty {
-                Text("No devices discovered")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(8)
-            } else {
-                VStack(spacing: 8) {
-                    ForEach(scannerManager.discoveredDevices, id: \.self) { device in
-                        HStack {
-                            Image(systemName: "scanner")
-                                .foregroundColor(.blue)
-                            Text(device)
-                                .font(.subheadline)
-                            Spacer()
-                            if scannerManager.connectedDeviceInfo == device {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(6)
-                    }
-                }
-            }
-        }
-    }
-    // MARK: - Scanner Controls Section
-    private var scannerControlsSection: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Scanner Controls")
-                    .font(.headline)
+                    .foregroundColor(statusColor)
+                
                 Spacer()
             }
-            HStack(spacing: 12) {
-                Button(action: {
-                    if scannerManager.scannerStatus == .connecting || scannerManager.scannerStatus == .connected {
-                        scannerManager.stopScanning()
-                    } else {
-                        scannerManager.startScanning()
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: scannerManager.scannerStatus == .connecting || scannerManager.scannerStatus == .connected ? "stop.circle" : "play.circle")
-                        Text(scannerManager.scannerStatus == .connecting || scannerManager.scannerStatus == .connected ? "Stop Scanning" : "Start Scanning")
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(scannerManager.scannerStatus == .connecting || scannerManager.scannerStatus == .connected ? Color.red : Color.blue)
-                    .cornerRadius(8)
-                }
-                .disabled(!scannerManager.isInitialized)
-                Button(action: {
-                    scannerManager.disconnectDevice()
-                }) {
-                    HStack {
-                        Image(systemName: "xmark.circle")
-                        Text("Disconnect")
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.orange)
-                    .cornerRadius(8)
-                }
-                .disabled(scannerManager.scannerStatus != .connected)
-                Spacer()
-            }
-        }
-    }
-    // MARK: - Scan Results Section
-    private var scanResultsSection: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Scan Results")
-                    .font(.headline)
-                Spacer()
-                Text("\(scanHistory.count) scans")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            if scanHistory.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "barcode.viewfinder")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray)
-                    Text("No scans yet")
+            
+            if let deviceInfo = scannerManager.connectedDeviceInfo {
+                HStack {
+                    Text("Device:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    Text("Start scanning to see results here")
+                    Text(deviceInfo)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Spacer()
+                }
+            }
+        }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(12)
+    }
+    
+    private var statusColor: Color {
+        switch scannerManager.scannerStatus {
+        case .connected:
+            return .green
+        case .connecting:
+            return .orange
+        case .disconnected:
+            return .gray
+        case .error:
+            return .red
+        }
+    }
+    
+    // MARK: - Scanned Data View
+    private var scannedDataView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Scanned Data")
+                    .font(.headline)
+                Spacer()
+                if !scanHistory.isEmpty {
+                    Text("\(scanHistory.count) scan\(scanHistory.count == 1 ? "" : "s")")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(8)
+            }
+            
+            if scanHistory.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "barcode.viewfinder")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray.opacity(0.5))
+                    
+                    Text("No scans yet")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                    
+                    Text("Scan a barcode or label to see the raw data here")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: 12) {
                         ForEach(Array(scanHistory.enumerated()), id: \.offset) { index, scanData in
-                            ScanResultCard(scanData: scanData, index: index + 1)
+                            ScannedDataCard(scanData: scanData, index: index + 1)
                         }
                     }
                 }
-                .frame(maxHeight: 300)
             }
         }
     }
+    
     // MARK: - Helper Methods
     private func setupScannerDelegate() {
         scannerManager.setDelegate(ScannerTestDelegate(scannerTestView: self))
     }
+    
     func onScannerDataReceived(_ data: ScannedBarcodeData) {
-        print(" Scanner test received data: \(data.rawData)")
-    }
-    func onScannerConnected(_ deviceInfo: String) {
-        print(" Scanner connected: \(deviceInfo)")
-    }
-    func onScannerDisconnected() {
-        print(" Scanner disconnected")
-    }
-    func onScannerError(_ error: Error) {
-        print(" Scanner error: \(error.localizedDescription)")
-    }
-    func onScannerDiscovered(_ deviceInfo: String) {
-        print(" Device discovered: \(deviceInfo)")
+        print("[ScannerTest] Received data: \(data.rawData)")
     }
 }
-// MARK: - Scan Result Card
-struct ScanResultCard: View {
+
+// MARK: - Scanned Data Card
+struct ScannedDataCard: View {
     let scanData: ScannedBarcodeData
     let index: Int
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
             HStack {
                 Text("Scan #\(index)")
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundColor(.blue)
+                
                 Spacer()
+                
                 Text(scanData.timestamp, formatter: timeFormatter)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            VStack(alignment: .leading, spacing: 4) {
+            
+            Divider()
+            
+            // Raw Data - Prominent Display
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Raw Data:")
                     .font(.caption)
                     .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
                 Text(scanData.rawData)
-                    .font(.system(.caption, design: .monospaced))
-                    .padding(8)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(4)
+                    .font(.system(.body, design: .monospaced))
+                    .fontWeight(.medium)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                    .textSelection(.enabled)
             }
+            
+            // Metadata
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Type: \(scanData.dataType)")
-                        .font(.caption)
-                    Text("Length: \(scanData.dataLength) bytes")
-                        .font(.caption)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     if let symbology = scanData.symbology {
-                        Text("Symbology: \(symbology)")
+                        Label(symbology, systemImage: "barcode")
                             .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                     if let device = scanData.deviceInfo {
-                        Text("Device: \(device)")
+                        Label(device, systemImage: "scanner")
                             .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
+                
+                Spacer()
+                
+                Text("\(scanData.dataLength) chars")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .foregroundColor(.secondary)
         }
         .padding()
-        .background(Color.blue.opacity(0.05))
-        .cornerRadius(8)
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-        )
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
+    
     private var timeFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.timeStyle = .medium
+        formatter.dateStyle = .none
         return formatter
     }
 }
+
 // MARK: - Scanner Test Delegate
 class ScannerTestDelegate: SocketMobileScannerManagerDelegate {
     private var scannerTestView: ScannerTestView?
+    
     init(scannerTestView: ScannerTestView) {
         self.scannerTestView = scannerTestView
     }
+    
     func scannerDidConnect(_ deviceInfo: String) {
-        scannerTestView?.onScannerConnected(deviceInfo)
+        print("[ScannerTest] Connected: \(deviceInfo)")
     }
+    
     func scannerDidDisconnect() {
-        scannerTestView?.onScannerDisconnected()
+        print("[ScannerTest] Disconnected")
     }
+    
     func scannerDidReceiveData(_ data: ScannedBarcodeData) {
         scannerTestView?.onScannerDataReceived(data)
     }
+    
     func scannerDidEncounterError(_ error: Error) {
-        scannerTestView?.onScannerError(error)
+        print("[ScannerTest] Error: \(error.localizedDescription)")
     }
+    
     func scannerDidDiscoverDevice(_ deviceInfo: String) {
-        scannerTestView?.onScannerDiscovered(deviceInfo)
+        print("[ScannerTest] Device discovered: \(deviceInfo)")
     }
-}
-#Preview {
-    ScannerTestView()
 }
