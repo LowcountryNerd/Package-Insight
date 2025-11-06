@@ -286,9 +286,7 @@ class SupabaseService: ObservableObject {
         let isAdmin: Bool?
         
         enum CodingKeys: String, CodingKey {
-            case action, email, password
-            case userId = "user_id"
-            case isAdmin = "is_admin"
+            case action, email, password, userId, isAdmin
         }
     }
     

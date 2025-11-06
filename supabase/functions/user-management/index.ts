@@ -27,10 +27,10 @@ serve(async (req) => {
 
     switch (action) {
       case 'list':
-        const { data: users, error: listError } = await supabaseClient.auth.admin.listUsers()
+        const { data: usersData, error: listError } = await supabaseClient.auth.admin.listUsers()
         if (listError) throw listError
         return new Response(
-          JSON.stringify({ success: true, users }),
+          JSON.stringify({ success: true, users: usersData.users }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
 
@@ -50,7 +50,12 @@ serve(async (req) => {
           app_metadata: { role: isAdmin ? 'admin' : 'user' }
         })
         
-        if (createError) throw createError
+        if (createError) {
+          return new Response(
+            JSON.stringify({ success: false, error: createError.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
         return new Response(
           JSON.stringify({ success: true, user: newUser.user }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -107,10 +112,12 @@ serve(async (req) => {
         )
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
+
 
