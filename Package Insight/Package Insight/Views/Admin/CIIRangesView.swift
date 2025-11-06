@@ -1,9 +1,11 @@
 import SwiftUI
 import Supabase
 import Auth
+
 struct CIIRangesView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var supabaseService = SupabaseService.shared
+    @StateObject private var authManager = AuthManager()
     @State private var ciiRanges: [CIIRange] = []
     @State private var isLoading = false
     @State private var showingAddRange = false
@@ -12,6 +14,7 @@ struct CIIRangesView: View {
     @State private var newPoints = ""
     @State private var newNotes = ""
     @State private var errorMessage: String?
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -95,6 +98,7 @@ struct CIIRangesView: View {
             await loadCIIRanges()
         }
     }
+    
     private func loadCIIRanges() async {
         isLoading = true
         do {
@@ -110,31 +114,75 @@ struct CIIRangesView: View {
             }
         }
     }
+    
     private func addRange() async {
-        isLoading = true
-        do {
-            // This would need to be implemented in SupabaseService
-            // For now, we'll show a placeholder
+        guard let userId = authManager.currentUser?.id else {
             await MainActor.run {
-                self.errorMessage = "Add functionality requires server-side implementation"
+                self.errorMessage = "User not authenticated"
                 self.isLoading = false
                 self.showingAddRange = false
-                resetForm()
+            }
+            return
+        }
+        
+        guard let minValue = Double(newMinValue),
+              let maxValue = Double(newMaxValue),
+              let points = Int(newPoints) else {
+            await MainActor.run {
+                self.errorMessage = "Invalid input values"
+                self.isLoading = false
+                self.showingAddRange = false
+            }
+            return
+        }
+        
+        isLoading = true
+        do {
+            let notes = newNotes.isEmpty ? nil : newNotes
+            let newRange = try await supabaseService.createCIIRange(
+                minValue: minValue,
+                maxValue: maxValue,
+                points: points,
+                notes: notes,
+                createdBy: userId
+            )
+            await MainActor.run {
+                self.ciiRanges.insert(newRange, at: 0)
+                self.isLoading = false
+                self.showingAddRange = false
+                self.resetForm()
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+                self.showingAddRange = false
             }
         }
     }
+    
     private func deleteRange(at offsets: IndexSet) {
-        // This would need to be implemented in SupabaseService
-        // For now, we'll show a placeholder
-        errorMessage = "Delete functionality requires server-side implementation"
+        Task {
+            for index in offsets {
+                let range = ciiRanges[index]
+                do {
+                    try await supabaseService.deleteCIIRange(id: range.id)
+                    await MainActor.run {
+                        self.ciiRanges.remove(at: index)
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.errorMessage = "Failed to delete: \(error.localizedDescription)"
+                    }
+                }
+            }
+        }
     }
+    
     private func resetForm() {
         newMinValue = ""
         newMaxValue = ""
         newPoints = ""
         newNotes = ""
     }
-}
-#Preview {
-    CIIRangesView()
 }

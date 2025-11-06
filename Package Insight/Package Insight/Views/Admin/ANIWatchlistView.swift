@@ -1,15 +1,18 @@
 import SwiftUI
 import Supabase
 import Auth
+
 struct ANIWatchlistView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var supabaseService = SupabaseService.shared
+    @StateObject private var authManager = AuthManager()
     @State private var watchlistItems: [ANIWatchlistItem] = []
     @State private var isLoading = false
     @State private var showingAddItem = false
     @State private var newAccountNumber = ""
     @State private var newNotes = ""
     @State private var errorMessage: String?
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -58,8 +61,7 @@ struct ANIWatchlistView: View {
                 TextField("Account Number", text: $newAccountNumber)
                 TextField("Notes (Optional)", text: $newNotes)
                 Button("Cancel", role: .cancel) {
-                    newAccountNumber = ""
-                    newNotes = ""
+                    resetForm()
                 }
                 Button("Add") {
                     Task {
@@ -82,6 +84,7 @@ struct ANIWatchlistView: View {
             await loadWatchlist()
         }
     }
+    
     private func loadWatchlist() async {
         isLoading = true
         do {
@@ -97,26 +100,60 @@ struct ANIWatchlistView: View {
             }
         }
     }
+    
     private func addItem() async {
-        isLoading = true
-        do {
-            // This would need to be implemented in SupabaseService
-            // For now, we'll show a placeholder
+        guard let userId = authManager.currentUser?.id else {
             await MainActor.run {
-                self.errorMessage = "Add functionality requires server-side implementation"
+                self.errorMessage = "User not authenticated"
                 self.isLoading = false
                 self.showingAddItem = false
-                self.newAccountNumber = ""
-                self.newNotes = ""
+            }
+            return
+        }
+        
+        isLoading = true
+        do {
+            let notes = newNotes.isEmpty ? nil : newNotes
+            let newItem = try await supabaseService.createANIWatchlistItem(
+                accountNumber: newAccountNumber,
+                notes: notes,
+                createdBy: userId
+            )
+            await MainActor.run {
+                self.watchlistItems.insert(newItem, at: 0)
+                self.isLoading = false
+                self.showingAddItem = false
+                self.resetForm()
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+                self.showingAddItem = false
             }
         }
     }
+    
     private func deleteItem(at offsets: IndexSet) {
-        // This would need to be implemented in SupabaseService
-        // For now, we'll show a placeholder
-        errorMessage = "Delete functionality requires server-side implementation"
+        Task {
+            for index in offsets {
+                let item = watchlistItems[index]
+                do {
+                    try await supabaseService.deleteANIWatchlistItem(id: item.id)
+                    await MainActor.run {
+                        self.watchlistItems.remove(at: index)
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.errorMessage = "Failed to delete: \(error.localizedDescription)"
+                    }
+                }
+            }
+        }
     }
-}
-#Preview {
-    ANIWatchlistView()
+    
+    private func resetForm() {
+        newAccountNumber = ""
+        newNotes = ""
+    }
 }

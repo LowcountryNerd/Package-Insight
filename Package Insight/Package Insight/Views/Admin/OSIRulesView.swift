@@ -1,9 +1,11 @@
 import SwiftUI
 import Supabase
 import Auth
+
 struct OSIRulesView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var supabaseService = SupabaseService.shared
+    @StateObject private var authManager = AuthManager()
     @State private var osiRules: [OSIRule] = []
     @State private var isLoading = false
     @State private var showingAddRule = false
@@ -11,6 +13,7 @@ struct OSIRulesView: View {
     @State private var newPoints = ""
     @State private var newNotes = ""
     @State private var errorMessage: String?
+    
     var body: some View {
         NavigationView {
             VStack {
@@ -102,6 +105,7 @@ struct OSIRulesView: View {
             await loadOSIRules()
         }
     }
+    
     private func loadOSIRules() async {
         isLoading = true
         do {
@@ -117,30 +121,71 @@ struct OSIRulesView: View {
             }
         }
     }
+    
     private func addRule() async {
-        isLoading = true
-        do {
-            // This would need to be implemented in SupabaseService
-            // For now, we'll show a placeholder
+        guard let userId = authManager.currentUser?.id else {
             await MainActor.run {
-                self.errorMessage = "Add functionality requires server-side implementation"
+                self.errorMessage = "User not authenticated"
                 self.isLoading = false
                 self.showingAddRule = false
-                resetForm()
+            }
+            return
+        }
+        
+        guard let points = Int(newPoints) else {
+            await MainActor.run {
+                self.errorMessage = "Invalid points value"
+                self.isLoading = false
+                self.showingAddRule = false
+            }
+            return
+        }
+        
+        isLoading = true
+        do {
+            let notes = newNotes.isEmpty ? nil : newNotes
+            let newRule = try await supabaseService.createOSIRule(
+                pattern: newPattern,
+                points: points,
+                notes: notes,
+                createdBy: userId
+            )
+            await MainActor.run {
+                self.osiRules.insert(newRule, at: 0)
+                self.isLoading = false
+                self.showingAddRule = false
+                self.resetForm()
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+                self.showingAddRule = false
             }
         }
     }
+    
     private func deleteRule(at offsets: IndexSet) {
-        // This would need to be implemented in SupabaseService
-        // For now, we'll show a placeholder
-        errorMessage = "Delete functionality requires server-side implementation"
+        Task {
+            for index in offsets {
+                let rule = osiRules[index]
+                do {
+                    try await supabaseService.deleteOSIRule(id: rule.id)
+                    await MainActor.run {
+                        self.osiRules.remove(at: index)
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.errorMessage = "Failed to delete: \(error.localizedDescription)"
+                    }
+                }
+            }
+        }
     }
+    
     private func resetForm() {
         newPattern = ""
         newPoints = ""
         newNotes = ""
     }
-}
-#Preview {
-    OSIRulesView()
 }

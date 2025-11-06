@@ -115,6 +115,189 @@ class SupabaseService: ObservableObject {
             .value
         return response
     }
+    
+    // MARK: - ANI Watchlist CRUD
+    func createANIWatchlistItem(accountNumber: String, notes: String?, createdBy: UUID) async throws -> ANIWatchlistItem {
+        struct InsertItem: Codable {
+            let accountNumber: String
+            let notes: String?
+            let createdBy: String
+            enum CodingKeys: String, CodingKey {
+                case accountNumber = "account_number"
+                case notes
+                case createdBy = "created_by"
+            }
+        }
+        let item = InsertItem(accountNumber: accountNumber, notes: notes, createdBy: createdBy.uuidString)
+        let response: ANIWatchlistItem = try await supabase
+            .from("ani_watchlist")
+            .insert(item)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
+    }
+    
+    func deleteANIWatchlistItem(id: UUID) async throws {
+        try await supabase
+            .from("ani_watchlist")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+    
+    // MARK: - VAI Safe Accounts CRUD
+    func createVAISafeAccount(accountNumber: String, notes: String?, createdBy: UUID) async throws -> VAISafeAccount {
+        struct InsertAccount: Codable {
+            let accountNumber: String
+            let notes: String?
+            let createdBy: String
+            enum CodingKeys: String, CodingKey {
+                case accountNumber = "account_number"
+                case notes
+                case createdBy = "created_by"
+            }
+        }
+        let account = InsertAccount(accountNumber: accountNumber, notes: notes, createdBy: createdBy.uuidString)
+        let response: VAISafeAccount = try await supabase
+            .from("vai_safe_accounts")
+            .insert(account)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
+    }
+    
+    func deleteVAISafeAccount(id: UUID) async throws {
+        try await supabase
+            .from("vai_safe_accounts")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+    
+    // MARK: - CII Ranges CRUD
+    func createCIIRange(minValue: Double, maxValue: Double, points: Int, notes: String?, createdBy: UUID) async throws -> CIIRange {
+        struct InsertRange: Codable {
+            let minValue: Double
+            let maxValue: Double
+            let points: Int
+            let notes: String?
+            let createdBy: String
+            enum CodingKeys: String, CodingKey {
+                case minValue = "min_value"
+                case maxValue = "max_value"
+                case points
+                case notes
+                case createdBy = "created_by"
+            }
+        }
+        let range = InsertRange(minValue: minValue, maxValue: maxValue, points: points, notes: notes, createdBy: createdBy.uuidString)
+        let response: CIIRange = try await supabase
+            .from("cii_ranges")
+            .insert(range)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
+    }
+    
+    func deleteCIIRange(id: UUID) async throws {
+        try await supabase
+            .from("cii_ranges")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+    
+    // MARK: - OSI Rules CRUD
+    func createOSIRule(pattern: String, points: Int, notes: String?, createdBy: UUID) async throws -> OSIRule {
+        struct InsertRule: Codable {
+            let pattern: String
+            let points: Int
+            let active: Bool
+            let notes: String?
+            let createdBy: String
+            enum CodingKeys: String, CodingKey {
+                case pattern, points, active, notes
+                case createdBy = "created_by"
+            }
+        }
+        let rule = InsertRule(pattern: pattern, points: points, active: true, notes: notes, createdBy: createdBy.uuidString)
+        let response: OSIRule = try await supabase
+            .from("osi_rules")
+            .insert(rule)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
+    }
+    
+    func deleteOSIRule(id: UUID) async throws {
+        try await supabase
+            .from("osi_rules")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+    
+    // MARK: - RSI Rules CRUD
+    func createRSIRule(pattern: String, points: Int, notes: String?, createdBy: UUID) async throws -> RSIRule {
+        struct InsertRule: Codable {
+            let pattern: String
+            let points: Int
+            let active: Bool
+            let notes: String?
+            let createdBy: String
+            enum CodingKeys: String, CodingKey {
+                case pattern, points, active, notes
+                case createdBy = "created_by"
+            }
+        }
+        let rule = InsertRule(pattern: pattern, points: points, active: true, notes: notes, createdBy: createdBy.uuidString)
+        let response: RSIRule = try await supabase
+            .from("rsi_rules")
+            .insert(rule)
+            .select()
+            .single()
+            .execute()
+            .value
+        return response
+    }
+    
+    func deleteRSIRule(id: UUID) async throws {
+        try await supabase
+            .from("rsi_rules")
+            .delete()
+            .eq("id", value: id)
+            .execute()
+    }
+    
+    // MARK: - User Management
+    // Note: Admin operations require service role key, which should be on backend
+    // For now, these are placeholders that will need backend implementation
+    func fetchUsers() async throws -> [User] {
+        // This requires admin API with service role key
+        // Should be implemented via backend/edge function
+        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "User management requires backend implementation with service role key"])
+    }
+    
+    func createUser(email: String, password: String, isAdmin: Bool = false) async throws -> User {
+        // This requires admin API with service role key
+        // Should be implemented via backend/edge function
+        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "User creation requires backend implementation with service role key"])
+    }
+    
+    func deleteUser(userId: UUID) async throws {
+        // This requires admin API with service role key
+        // Should be implemented via backend/edge function
+        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "User deletion requires backend implementation with service role key"])
+    }
+    
     // MARK: - Edge Function Calls
     func callFedExTrack(trackingNumber: String) async throws -> FedExTrackResponse {
         let parameters = FedExTrackRequest(trackingNumber: trackingNumber)
