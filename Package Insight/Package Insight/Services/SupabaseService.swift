@@ -277,25 +277,65 @@ class SupabaseService: ObservableObject {
             .execute()
     }
     
-    // MARK: - User Management
-    // Note: Admin operations require service role key, which should be on backend
-    // For now, these are placeholders that will need backend implementation
+    // MARK: - User Management (via Edge Function)
+    struct UserManagementRequest: Codable {
+        let action: String
+        let email: String?
+        let password: String?
+        let userId: String?
+        let isAdmin: Bool?
+        
+        enum CodingKeys: String, CodingKey {
+            case action, email, password
+            case userId = "user_id"
+            case isAdmin = "is_admin"
+        }
+    }
+    
+    struct UserManagementResponse: Codable {
+        let success: Bool
+        let users: [User]?
+        let user: User?
+        let error: String?
+    }
+    
     func fetchUsers() async throws -> [User] {
-        // This requires admin API with service role key
-        // Should be implemented via backend/edge function
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "User management requires backend implementation with service role key"])
+        let request = UserManagementRequest(action: "list", email: nil, password: nil, userId: nil, isAdmin: nil)
+        let response: UserManagementResponse = try await supabase.functions
+            .invoke("user-management", options: .init(body: request))
+        guard response.success, let users = response.users else {
+            throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: response.error ?? "Failed to fetch users"])
+        }
+        return users
     }
     
     func createUser(email: String, password: String, isAdmin: Bool = false) async throws -> User {
-        // This requires admin API with service role key
-        // Should be implemented via backend/edge function
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "User creation requires backend implementation with service role key"])
+        let request = UserManagementRequest(action: "create", email: email, password: password, userId: nil, isAdmin: isAdmin)
+        let response: UserManagementResponse = try await supabase.functions
+            .invoke("user-management", options: .init(body: request))
+        guard response.success, let user = response.user else {
+            throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: response.error ?? "Failed to create user"])
+        }
+        return user
     }
     
     func deleteUser(userId: UUID) async throws {
-        // This requires admin API with service role key
-        // Should be implemented via backend/edge function
-        throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "User deletion requires backend implementation with service role key"])
+        let request = UserManagementRequest(action: "delete", email: nil, password: nil, userId: userId.uuidString, isAdmin: nil)
+        let response: UserManagementResponse = try await supabase.functions
+            .invoke("user-management", options: .init(body: request))
+        guard response.success else {
+            throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: response.error ?? "Failed to delete user"])
+        }
+    }
+    
+    func updateUserRole(userId: UUID, isAdmin: Bool) async throws -> User {
+        let request = UserManagementRequest(action: "updateRole", email: nil, password: nil, userId: userId.uuidString, isAdmin: isAdmin)
+        let response: UserManagementResponse = try await supabase.functions
+            .invoke("user-management", options: .init(body: request))
+        guard response.success, let user = response.user else {
+            throw NSError(domain: "SupabaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: response.error ?? "Failed to update user role"])
+        }
+        return user
     }
     
     // MARK: - Edge Function Calls
