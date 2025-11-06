@@ -92,11 +92,18 @@ struct ANIWatchlistView: View {
             await MainActor.run {
                 self.watchlistItems = items
                 self.isLoading = false
+                self.errorMessage = nil
+                print("[ANIWatchlistView] Successfully loaded \(items.count) items")
             }
         } catch {
+            let errorMsg = "Failed to load: \(error.localizedDescription)"
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                self.errorMessage = errorMsg
                 self.isLoading = false
+            }
+            print("[ANIWatchlistView] Error: \(error)")
+            if let decodingError = error as? DecodingError {
+                print("[ANIWatchlistView] Decoding error: \(decodingError)")
             }
         }
     }

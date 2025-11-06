@@ -85,7 +85,22 @@ class SupabaseService: ObservableObject {
             print("[SupabaseService] Fetched \(response.count) ANI watchlist items")
             return response
         } catch {
-            print("[SupabaseService] Error fetching ANI watchlist: \(error.localizedDescription)")
+            print("[SupabaseService] Error fetching ANI watchlist: \(error)")
+            if let decodingError = error as? DecodingError {
+                print("[SupabaseService] Decoding error details: \(decodingError)")
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("[SupabaseService] Missing key: \(key.stringValue), path: \(context.codingPath)")
+                case .typeMismatch(let type, let context):
+                    print("[SupabaseService] Type mismatch: expected \(type), path: \(context.codingPath)")
+                case .valueNotFound(let type, let context):
+                    print("[SupabaseService] Value not found: \(type), path: \(context.codingPath)")
+                case .dataCorrupted(let context):
+                    print("[SupabaseService] Data corrupted: \(context)")
+                @unknown default:
+                    print("[SupabaseService] Unknown decoding error")
+                }
+            }
             throw error
         }
     }
