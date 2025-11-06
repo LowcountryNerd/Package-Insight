@@ -28,9 +28,15 @@ serve(async (req) => {
     switch (action) {
       case 'list':
         const { data: usersData, error: listError } = await supabaseClient.auth.admin.listUsers()
-        if (listError) throw listError
+        if (listError) {
+          return new Response(
+            JSON.stringify({ success: false, error: listError.message }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        const users = usersData?.users || []
         return new Response(
-          JSON.stringify({ success: true, users: usersData.users }),
+          JSON.stringify({ success: true, users: users }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
 

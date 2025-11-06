@@ -74,7 +74,13 @@ struct UserManagementView: View {
     }
     
     private func loadUsers() async {
-        guard authManager.isAdmin else { return }
+        guard authManager.isAdmin else {
+            await MainActor.run {
+                self.errorMessage = "Admin access required"
+                self.isLoading = false
+            }
+            return
+        }
         
         isLoading = true
         do {
@@ -82,11 +88,15 @@ struct UserManagementView: View {
             await MainActor.run {
                 self.users = fetchedUsers
                 self.isLoading = false
+                self.errorMessage = nil
+                print("[UserManagement] Loaded \(fetchedUsers.count) users")
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                let errorMsg = error.localizedDescription
+                self.errorMessage = errorMsg
                 self.isLoading = false
+                print("[UserManagement] Error loading users: \(errorMsg)")
             }
         }
     }
